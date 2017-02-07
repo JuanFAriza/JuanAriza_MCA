@@ -1,3 +1,5 @@
+// Voy a partir la grilla horizontalmente, cada procesador maneja todas las columnas, pero solo un rango de filas que va hasta la frontera mas una fila
+#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -6,10 +8,22 @@
 #define l 0.02 // Longitud de la placa
 #define d 0.01 // Separacion entre placas
 #define V0 (float)(100) // Diferencia de potencial entre placas
-#define h 0.0002 // Longitud de cada celda de la rejilla
+#define h 0.0001953 // Longitud de cada celda de la rejilla, tal que celdas=256
 #define N (int)(2*pow((L/h),2)) // Numero de iteraciones
 
-int main(void){
+void valores_fijos(int size, int rank);
+void inicializar();
+
+
+int main(int argc, char** argv){
+  MPI_Init(NULL, NULL);
+
+  int world_rank, world_size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+  
+
   int i,j,iter;
   int n = (int)(L/h); // Numero de celdas
   int j0Placa, jfPlaca, iPlaca1, iPlaca2; // Posicion de las placas
