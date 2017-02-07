@@ -10,10 +10,10 @@
 #define V0 (float)(100) // Diferencia de potencial entre placas
 #define h 0.0001953 // Longitud de cada celda de la rejilla, tal que celdas=256
 #define N (int)(2*pow((L/h),2)) // Numero de iteraciones
+#define n (int)(L/h) // Numero de celdas por eje
 
-void valores_fijos(int size, int rank);
-void inicializar();
-
+void inicializar(double *grid, int num_filas); // Inicializa todo en 0
+void valores_fijos(double *grid, int size, int rank);
 
 int main(int argc, char** argv){
   MPI_Init(NULL, NULL);
@@ -25,7 +25,6 @@ int main(int argc, char** argv){
   
 
   int i,j,iter;
-  int n = (int)(L/h); // Numero de celdas
   int j0Placa, jfPlaca, iPlaca1, iPlaca2; // Posicion de las placas
 
   j0Placa = (int)(((L/2) - (l/2))/h);
@@ -119,4 +118,37 @@ int main(int argc, char** argv){
     printf("\n");
   }
   return 0;
+}
+
+void inicializar(double *grid, int num_filas){
+  int i;
+  for (i=0;i<num_filas*n;i++){
+    grid[i] = 1;
+  }
+}
+
+void valores_fijos(double *grid, int size, int rank){
+  int i;
+  int num_filas = 2 + n/size; // Numero de filas en este sector, en general es la anterior mas la siguiente mas total filas sobre sectores
+  if (rank==0){ // Si soy el 0 tengo total filas sobre sectores mas la siguiente fila
+    num_filas = 1 + n/size;
+  }
+  if (rank==(size-1)){ // Si soy el ultimo tengo una fila mas total de filas sobre sectores
+    num_filas = 1 + n/size;
+  }
+
+  for (i=0;i<num_filas;i++){ // Fija en 0 las columnas
+    grid[i*n+0] = grid[i*n+n-1] = 0;
+  }
+  if (rank==0){ // Si soy el rank 0 fijo en 0 el borde superior
+    for(i=0;i<n;i++){
+      grid[i] = 0;
+    }
+  }
+  if (rank==(size-1)){ // Si soy el rank size-1 fijo en 0 el borde inferior
+    for(i=0;i<n;i++){
+      grid[n*(num_filas-1)+i] = 0;
+    }
+  }
+  // Falta fijar las placas
 }
