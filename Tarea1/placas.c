@@ -42,9 +42,15 @@ int main(int argc, char** argv){
   
   double *V; // Matriz de potencial electrico presente
   double *Vfuturo; // Matriz de potencial electrico futuro
+  double send_siguiente, send_anterior;
+  double recv_siguiente, recv_anterior;
   
-  V = malloc(n*n*sizeof(double));
-  Vfuturo = malloc(n*n*sizeof(double));
+  V = malloc((i_final - i_inicial)*sizeof(double));
+  Vfuturo = malloc((i_final - i_inicial)*sizeof(double));
+
+  if (i_final<n*n){
+    
+  }
 
   inicializar(V,i_inicial,i_final);
   inicializar(Vfuturo,i_inicial,i_final);
