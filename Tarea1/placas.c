@@ -39,42 +39,17 @@ int main(int argc, char** argv){
   }
 
   int i,j,iter;
-  int j0Placa, jfPlaca, iPlaca1, iPlaca2; // Posicion de las placas
-
-  j0Placa = (int)(((L/2) - (l/2))/h);
-  jfPlaca = (n-1) - j0Placa;
-  iPlaca1 = (int)(((L/2) - (d/2))/h);
-  iPlaca2 = (n-1) - iPlaca1;
-
+  
   double *V; // Matriz de potencial electrico presente
   double *Vfuturo; // Matriz de potencial electrico futuro
-  double *Ex; // Matriz de campo electrico en x
-  double *Ey; // Matriz de campo electrico en y
-
+  
   V = malloc(n*n*sizeof(double));
   Vfuturo = malloc(n*n*sizeof(double));
-  Ex = malloc(n*n*sizeof(double));
-  Ey = malloc(n*n*sizeof(double));
 
-  for (i=0;i<n;i++){ // Inicializa en 0 las columnas en el borde pres. y fut.
-    Vfuturo[n*i+0] = V[n*i+0] = 0;
-    Vfuturo[n*i+n-1] = V[n*i+n-1] = 0;
-  }
-  for (j=0;j<n;j++){ // Inicializa en 0 las filas en el borde pres. y fut.
-    Vfuturo[n*0+j] = V[n*0+j] = 0;
-    Vfuturo[n*(n-1)+j] = V[n*(n-1)+j] = 0;
-  }
-
-  for (i=1;i<n-1;i++){ // Inicializa TODO el interior en 1
-    for (j=1;j<n-1;j++){
-      V[n*i+j] = 1;
-    }
-  }
-
-  for (j=j0Placa;j<jfPlaca+1;j++){ // Fija el voltaje en las placas
-    Vfuturo[n*iPlaca1+j] = V[n*iPlaca1+j] = -V0/2;
-    Vfuturo[n*iPlaca2+j] = V[n*iPlaca2+j] = V0/2;
-  }
+  inicializar(V,i_inicial,i_final);
+  inicializar(Vfuturo,i_inicial,i_final);
+  valores_fijos(V,i_inicial,i_final);
+  valores_fijos(Vfuturo,i_inicial,i_final);
 
   for (iter=0;iter<N;iter++){
     for (i=1;i<n-1;i++){ // Actualiza el futuro de acuerdo al presente
