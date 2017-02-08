@@ -23,7 +23,10 @@ void valores_fijos(double *grid, int inicial, int final);
 int main(int argc, char** argv){
   MPI_Init(NULL, NULL);
 
-  int world_rank, world_size;
+  MPI_Request send_sig_request, send_ante_request, recv_sig_request, recv_ante_request;
+  MPI_Status status;
+
+  int world_rank, world_size, source, destination;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
@@ -37,42 +40,74 @@ int main(int argc, char** argv){
   if (i_final > n*n){
     i_final = n*n;
   }
+  int num_filas = (i_final - i_inicial)/n; // Numero de filas en este sector
 
   int i,j,iter;
   
   double *V; // Matriz de potencial electrico presente
   double *Vfuturo; // Matriz de potencial electrico futuro
-  double send_siguiente, send_anterior;
-  double recv_siguiente, recv_anterior;
+  double *send_sig, *send_ante;
+  double *recv_sig, *recv_ante;
   
   V = malloc((i_final - i_inicial)*sizeof(double));
   Vfuturo = malloc((i_final - i_inicial)*sizeof(double));
+  send_sig = malloc(n*sizeof(double));
+  send_ante = malloc(n*sizeof(double));
+  recv_sig = malloc(n*sizeof(double));
+  recv_ante = malloc(n*sizeof(double));
 
-  if (i_final<n*n){
-    
-  }
-
-  inicializar(V,i_inicial,i_final);
-  inicializar(Vfuturo,i_inicial,i_final);
-  valores_fijos(V,i_inicial,i_final);
-  valores_fijos(Vfuturo,i_inicial,i_final);
+  inicializar(&V,i_inicial,i_final);
+  valores_fijos(&V,i_inicial,i_final);
+  inicializar(&Vfuturo,i_inicial,i_final);
+  valores_fijos(&Vfuturo,i_inicial,i_final);
 
   for (iter=0;iter<N;iter++){
-    for (i=1;i<n-1;i++){ // Actualiza el futuro de acuerdo al presente
+    for (i=1;i<num_filas-1;i++){ // Actualiza el futuro de acuerdo al presente
       for (j=1;j<n-1;j++){
 	Vfuturo[n*i+j] = (0.25)*(V[n*i+j+1]+V[n*(i+1)+j]+V[n*i+j-1]+V[n*(i-1)+j]);
       }
     }
-    for (i=1;i<n-1;i++){ // Actualiza el presente al futuro
-      for (j=1;j<n-1;j++){
-	V[n*i+j] = Vfuturo[n*i+j];
+    for (i=0;i<n;i++){
+      send_ante[i] = Vfuturo[n+i]; // Segunda fila
+      send_sig[i] = Vfuturo[(num_filas-2)*n+i]; // Penultima fila
+    }
+    if (world_rank>0){ // Si no es el primero, envia y recibe del anterior
+      destination = world_rank - 1;
+      source = world_rank - 1;
+      MPI_Isend(&send_ante, n, MPI_DOUBLE, destination, 0, MPI_COMM_WORLD, &send_ante_request);
+      MPI_Irecv(&recv_ante, n, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, &recv_ante_request);
+    }
+    if (world_rank<world_size-1){ // Si no es el ultimo, envia y recibe del siguiente
+      destination = world_rank + 1;
+      source = world_rank + 1;
+      MPI_Isend(&send_sig, n, MPI_DOUBLE, destination, 0, MPI_COMM_WORLD, &send_sig_request);
+      MPI_Irecv(&recv_sig, n, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, &recv_sig_request);
+    }
+
+    MPI_Wait(&send_ante_request, &status);
+    MPI_Wait(&recv_ante_request, &status);
+    MPI_Wait(&send_sig_request, &status);
+    MPI_Wait(&recv_sig_request, &status);
+
+    if (world_rank>0){ // Actualiza en futuro frontera inferior
+      for (i=0;i<n;i++){
+	Vfuturo[i] = recv_ante[i];
       }
     }
-    for (j=j0Placa;j<jfPlaca+1;j++){ // Fija el voltaje en las placas
-      Vfuturo[n*iPlaca1+j] = V[n*iPlaca1+j] = -V0/2;
-      Vfuturo[n*iPlaca2+j] = V[n*iPlaca2+j] = V0/2;
+    if (world_rank<world_size-1){ // Actualiza en futuro frontera superior
+      for (i=0;i<n;i++){
+	Vfuturo[(num_filas-1)*n+i] = recv_sig[i];
+      }
     }
+
+    for (i=0;i<(i_final-i_inicial);i++){ // Actualiza presente de acuerdo a futuro
+      V[i] = Vfuturo[i];
+    }
+
+    valores_fijos(&V,i_inicial,i_final); // Fijo los valores fijos
   }
+
+  // Centralizar los sectores
 
   for (i=0;i<n;i++){ // Calcula el campo Ex en las columnas en el borde
     Ex[n*i+0] = -(V[n*i+1] - V[n*i+0])/h;
