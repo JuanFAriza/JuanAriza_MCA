@@ -4,16 +4,21 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define L 0.05 // Longitud lateral del cuadro
-#define l 0.02 // Longitud de la placa
-#define d 0.01 // Separacion entre placas
+#define L 5 // Longitud lateral del cuadro
+#define l 2 // Longitud de la placa
+#define d 1 // Separacion entre placas
 #define V0 (float)(100) // Diferencia de potencial entre placas
-#define h 0.0001953 // Longitud de cada celda de la rejilla, tal que celdas=256
+#define h 0.01953 // Longitud de cada celda de la rejilla, tal que celdas=256
 #define N (int)(2*pow((L/h),2)) // Numero de iteraciones
-#define n (int)(L/h) // Numero de celdas por eje
+#define n (int)(L/h) // Numero de celdas por eje (256)
+#define inicio_placa1 ((int)(((L/2) - (d/2))/h))*n + ((int)(((L/2) - (l/2))/h))
+#define fin_placa1 ((int)(((L/2) - (d/2))/h))*n + ((int)(((L/2) + (l/2))/h))
+#define inicio_placa2 ((int)(((L/2) + (d/2))/h))*n + ((int)(((L/2) - (l/2))/h))
+#define fin_placa2 ((int)(((L/2) + (d/2))/h))*n + ((int)(((L/2) + (l/2))/h))
 
-void inicializar(double *grid, int num_filas); // Inicializa todo en 0
-void valores_fijos(double *grid, int size, int rank);
+
+void inicializar(double *grid, int inicial, int final); // Inicializa todo en 0
+void valores_fijos(double *grid, int inicial, int final);
 
 int main(int argc, char** argv){
   MPI_Init(NULL, NULL);
@@ -22,7 +27,16 @@ int main(int argc, char** argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-  
+  int i_inicial, i_final; // Desde que celda empieza cada procesador, y hasta donde llega
+
+  i_inicial = -n + n*world_rank*n/world_size; // Se resta para incluir la fila anterior
+  i_final = n + n*(world_rank + 1)*n/world_size; // Se suma para ir hasta la siguiente fila
+  if (i_inicial < 0){
+    i_inicial = 0;
+  }
+  if (i_final > n*n){
+    i_final = n*n;
+  }
 
   int i,j,iter;
   int j0Placa, jfPlaca, iPlaca1, iPlaca2; // Posicion de las placas
@@ -120,35 +134,44 @@ int main(int argc, char** argv){
   return 0;
 }
 
-void inicializar(double *grid, int num_filas){
+void inicializar(double *grid, int inicial, int final){
   int i;
-  for (i=0;i<num_filas*n;i++){
+  for (i=0;i<(final-inicial);i++){
     grid[i] = 1;
   }
 }
 
-void valores_fijos(double *grid, int size, int rank){
+void valores_fijos(double *grid, int inicial, int final){
   int i;
-  int num_filas = 2 + n/size; // Numero de filas en este sector, en general es la anterior mas la siguiente mas total filas sobre sectores
-  if (rank==0){ // Si soy el 0 tengo total filas sobre sectores mas la siguiente fila
-    num_filas = 1 + n/size;
-  }
-  if (rank==(size-1)){ // Si soy el ultimo tengo una fila mas total de filas sobre sectores
-    num_filas = 1 + n/size;
-  }
+  int num_filas = (final - inicial)/n; // Numero de filas en este sector
 
   for (i=0;i<num_filas;i++){ // Fija en 0 las columnas
     grid[i*n+0] = grid[i*n+n-1] = 0;
   }
-  if (rank==0){ // Si soy el rank 0 fijo en 0 el borde superior
+  
+  if (inicial==0){ // Si empieza en fila 0 fija en 0 el borde superior
     for(i=0;i<n;i++){
       grid[i] = 0;
     }
   }
-  if (rank==(size-1)){ // Si soy el rank size-1 fijo en 0 el borde inferior
+  if (final==n*n){ // Si termina en la ultima fila fija en 0 el borde inferior
     for(i=0;i<n;i++){
       grid[n*(num_filas-1)+i] = 0;
     }
   }
-  // Falta fijar las placas
+
+  if (inicial < inicio_placa1){
+    if (final > fin_placa1){
+      for (i=inicio_placa1-inicial;i<fin_placa1-inicial;i++){
+	grid[i] = -V0/2; // Fijar placa 1
+      }
+    }
+  }
+  if (inicial < inicio_placa2){
+    if (final > fin_placa2){
+      for (i=inicio_placa2-inicial;i<fin_placa2-inicial;i++){
+	grid[i] = V0/2; // Fijar placa 2
+      }
+    }
+  }
 }
