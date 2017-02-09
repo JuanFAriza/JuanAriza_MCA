@@ -64,8 +64,6 @@ int main(int argc, char** argv){
   inicializar(Vfuturo,i_inicial,i_final);
   valores_fijos(Vfuturo,i_inicial,i_final);
 
-  printf("Se inicializaron las matrices\n");
-
   for (iter=0;iter<N;iter++){
     for (i=1;i<num_filas-1;i++){ // Actualiza el futuro de acuerdo al presente
       for (j=1;j<n-1;j++){
@@ -111,6 +109,8 @@ int main(int argc, char** argv){
 
     valores_fijos(V,i_inicial,i_final); // Fijo los valores fijos
   }
+
+  printf("Iteraciones correctas\n");
 
   // Define el array que va a enviar a centralizar
   if (i_inicial==0){
