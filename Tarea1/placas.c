@@ -47,7 +47,7 @@ int main(int argc, char** argv){
   double *V; // Matriz de potencial electrico presente
   double *Vfuturo; // Matriz de potencial electrico futuro
   double *Vsend; // Matriz que se envia al procesador central
-  double *Vfinal; // Matriz del recuadro completo
+  double *Vfinal, *Ex, *Ey; // Matriz del recuadro completo
   double *send_sig, *send_ante;
   double *recv_sig, *recv_ante;
   
@@ -59,10 +59,10 @@ int main(int argc, char** argv){
   recv_sig = malloc(n*sizeof(double));
   recv_ante = malloc(n*sizeof(double));
 
-  inicializar(&V,i_inicial,i_final);
-  valores_fijos(&V,i_inicial,i_final);
-  inicializar(&Vfuturo,i_inicial,i_final);
-  valores_fijos(&Vfuturo,i_inicial,i_final);
+  inicializar(V,i_inicial,i_final);
+  valores_fijos(V,i_inicial,i_final);
+  inicializar(Vfuturo,i_inicial,i_final);
+  valores_fijos(Vfuturo,i_inicial,i_final);
 
   for (iter=0;iter<N;iter++){
     for (i=1;i<num_filas-1;i++){ // Actualiza el futuro de acuerdo al presente
@@ -107,7 +107,7 @@ int main(int argc, char** argv){
       V[i] = Vfuturo[i];
     }
 
-    valores_fijos(&V,i_inicial,i_final); // Fijo los valores fijos
+    valores_fijos(V,i_inicial,i_final); // Fijo los valores fijos
   }
 
   // Define el array que va a enviar a centralizar
@@ -129,8 +129,10 @@ int main(int argc, char** argv){
     }
   }
 
-  if (world_rank==0){ // Asigna para el proc. 0 la memoria de la matriz final
+  if (world_rank==0){ // Asigna para el proc0 la memoria de las matrices finales
     Vfinal = malloc(n*n*sizeof(double));
+    Ex = malloc(n*n*sizeof(double));
+    Ey = malloc(n*n*sizeof(double));
   }
 
   MPI_Gather(&Vsend, (n*n/world_size), MPI_DOUBLE, Vfinal, (n*n/world_size), MPI_DOUBLE, 0, MPI_COMM_WORLD);  // Centraliza los Vsend en Vfinal
