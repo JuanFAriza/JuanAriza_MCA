@@ -7,8 +7,8 @@
 #define L (double)5 // Longitud lateral del cuadro
 #define l (double)2 // Longitud de la placa
 #define d (double)1 // Separacion entre placas
-#define V0 (double)(100) // Diferencia de potencial entre placas
-#define h 0.01953 // Longitud de cada celda de la rejilla, tal que celdas=256
+#define V0 (double)100 // Diferencia de potencial entre placas
+#define h (double)0.01953 // Longitud de cada celda de la rejilla, tal que celdas=256
 #define N (int)(2*pow((L/h),2)) // Numero de iteraciones
 #define n (int)(L/h) // Numero de celdas por eje (256)
 #define inicio_placa1 ((int)(((L/2) - (d/2))/h))*n + ((int)(((L/2) - (l/2))/h))
@@ -21,6 +21,8 @@ void inicializar(double *grid, int inicial, int final); // Inicializa todo en 0
 void valores_fijos(double *grid, int inicial, int final);
 
 int main(int argc, char** argv){
+  int iter,i,j,i_inicial,i_final,num_filas;
+
   MPI_Init(NULL, NULL);
 
   MPI_Request send_sig_request, send_ante_request, recv_sig_request, recv_ante_request;
@@ -30,20 +32,24 @@ int main(int argc, char** argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-  int i_inicial, i_final; // Desde que celda empieza cada procesador, y hasta donde llega
+  printf("procesador %d de %d arranco n es %d\n",world_rank,world_size,n); // Checkpoint A
 
-  i_inicial = -n + n*world_rank*n/world_size; // Se resta para incluir la fila anterior
-  i_final = n + n*(world_rank + 1)*n/world_size; // Se suma para ir hasta la siguiente fila
+  printf("proces %d ini %d\n",world_rank,n*n*world_rank/world_size); // Checkpoint B
+
+  i_inicial = (n*n*world_rank/world_size) - n; // Se resta para incluir la fila anterior
+  i_final = (n*(world_rank + 1)*n/world_size) + n; // Se suma para ir hasta la siguiente fila
+  
+  printf("proc %d empieza en %d",world_rank,i_inicial);
   if (world_rank==0){
     i_inicial = 0;
   }
   if (world_rank==world_size-1){
     i_final = n*n;
   }
-  int num_filas = (i_final - i_inicial)/n; // Numero de filas en este sector
+  num_filas = (i_final - i_inicial)/n; // Numero de filas en este sector
 
-  int i,j,iter;
-  
+  printf("procesador %d tiene %d filas",world_rank,num_filas);
+
   double *V; // Matriz de potencial electrico presente
   double *Vfuturo; // Matriz de potencial electrico futuro
   double *Vsend; // Matriz que se envia al procesador central
