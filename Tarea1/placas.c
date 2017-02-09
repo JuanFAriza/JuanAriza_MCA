@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define L 5 // Longitud lateral del cuadro
-#define l 2 // Longitud de la placa
-#define d 1 // Separacion entre placas
-#define V0 (float)(100) // Diferencia de potencial entre placas
+#define L (double)5 // Longitud lateral del cuadro
+#define l (double)2 // Longitud de la placa
+#define d (double)1 // Separacion entre placas
+#define V0 (double)(100) // Diferencia de potencial entre placas
 #define h 0.01953 // Longitud de cada celda de la rejilla, tal que celdas=256
 #define N (int)(2*pow((L/h),2)) // Numero de iteraciones
 #define n (int)(L/h) // Numero de celdas por eje (256)
