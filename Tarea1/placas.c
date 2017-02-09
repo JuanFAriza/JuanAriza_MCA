@@ -64,7 +64,7 @@ int main(int argc, char** argv){
   inicializar(Vfuturo,i_inicial,i_final);
   valores_fijos(Vfuturo,i_inicial,i_final);
 
-  printf("Se inicializaron las matrices");
+  printf("Se inicializaron las matrices\n");
 
   for (iter=0;iter<N;iter++){
     for (i=1;i<num_filas-1;i++){ // Actualiza el futuro de acuerdo al presente
