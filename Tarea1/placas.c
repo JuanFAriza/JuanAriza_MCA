@@ -46,11 +46,14 @@ int main(int argc, char** argv){
   
   double *V; // Matriz de potencial electrico presente
   double *Vfuturo; // Matriz de potencial electrico futuro
+  double *Vsend; // Matriz que se envia al procesador central
+  double *Vfinal; // Matriz del recuadro completo
   double *send_sig, *send_ante;
   double *recv_sig, *recv_ante;
   
   V = malloc((i_final - i_inicial)*sizeof(double));
   Vfuturo = malloc((i_final - i_inicial)*sizeof(double));
+  Vsend = malloc(sizeof(double)*n*n/world_size)
   send_sig = malloc(n*sizeof(double));
   send_ante = malloc(n*sizeof(double));
   recv_sig = malloc(n*sizeof(double));
@@ -107,45 +110,70 @@ int main(int argc, char** argv){
     valores_fijos(&V,i_inicial,i_final); // Fijo los valores fijos
   }
 
-  // Centralizar los sectores
-
-  for (i=0;i<n;i++){ // Calcula el campo Ex en las columnas en el borde
-    Ex[n*i+0] = -(V[n*i+1] - V[n*i+0])/h;
-    Ex[n*i+n-1] = -(V[n*i+n-1] - V[n*i+n-2])/h;
+  // Define el array que va a enviar a centralizar
+  if (i_inicial==0){
+    for (i=0;i<i_final-n;i++){
+      Vsend[i] = V[i];
+    }
   }
-  for (i=0;i<n;i++){ // Calcula el campo Ex en el resto de columnas
-    for (j=1;j<n-1;j++){
-      Ex[n*i+j] = -(V[n*i+j+1] - V[n*i+j-1])/(2*h);
+  if (i_inicial!=0){
+    if (i_final==n*n){
+      for (i=n;i<i_final;i++){
+	Vsend[i-n] = V[i];
+      }
+    }
+    if (i_final!=n*n){
+      for(i=n;i<i_final-n;i++){
+	Vsend[i-n] = V[i];
+      }
     }
   }
 
-  for (j=0;j<n;j++){ // Calcula el campo Ey en las filas en el borde
-    Ey[n*0+j] = (V[n*1+j] - V[n*0+j])/h;
-    Ey[n*(n-1)+j] = (V[n*(n-1)+j] - V[n*(n-2)+j])/h;
-  }
-  for (i=1;i<n-1;i++){ // Calcula el campo Ey en el resto de filas
-    for (j=0;j<n;j++){
-      Ey[n*i+j] = (V[n*(i+1)+j] - V[n*(i-1)+j])/(2*h);
-    }
+  if (world_rank==0){ // Asigna para el proc. 0 la memoria de la matriz final
+    Vfinal = malloc(n*n*sizeof(double));
   }
 
-  for (i=0;i<n;i++){ // Imprime Voltaje
-    for (j=0;j<n;j++){
-      printf("%f ",V[n*i+j]);
+  MPI_Gather(&Vsend, (n*n/world_size), MPI_DOUBLE, Vfinal, (n*n/world_size), MPI_DOUBLE, 0, MPI_COMM_WORLD);  // Centraliza los Vsend en Vfinal
+
+  if (world_rank==0){ // Si es el proc. 0 imprime los valores
+    for (i=0;i<n;i++){ // Calcula el campo Ex en las columnas en el borde
+      Ex[n*i+0] = -(Vfinal[n*i+1] - Vfinal[n*i+0])/h;
+      Ex[n*i+n-1] = -(Vfinal[n*i+n-1] - Vfinal[n*i+n-2])/h;
     }
-    printf("\n");
-  }
-  for (i=0;i<n;i++){ // Imprime campo Ex
-    for (j=0;j<n;j++){
-      printf("%f ",Ex[n*i+j]);
+    for (i=0;i<n;i++){ // Calcula el campo Ex en el resto de columnas
+      for (j=1;j<n-1;j++){
+	Ex[n*i+j] = -(Vfinal[n*i+j+1] - Vfinal[n*i+j-1])/(2*h);
+      }
     }
-    printf("\n");
-  }
-  for (i=0;i<n;i++){ // Imprime campo Ey
-    for (j=0;j<n;j++){
-      printf("%f ",Ey[n*i+j]);
+
+    for (j=0;j<n;j++){ // Calcula el campo Ey en las filas en el borde
+      Ey[n*0+j] = (Vfinal[n*1+j] - Vfinal[n*0+j])/h;
+      Ey[n*(n-1)+j] = (Vfinal[n*(n-1)+j] - Vfinal[n*(n-2)+j])/h;
     }
-    printf("\n");
+    for (i=1;i<n-1;i++){ // Calcula el campo Ey en el resto de filas
+      for (j=0;j<n;j++){
+	Ey[n*i+j] = (Vfinal[n*(i+1)+j] - Vfinal[n*(i-1)+j])/(2*h);
+      }
+    }
+
+    for (i=0;i<n;i++){ // Imprime Voltaje
+      for (j=0;j<n;j++){
+	printf("%f ",Vfinal[n*i+j]);
+      }
+      printf("\n");
+    }
+    for (i=0;i<n;i++){ // Imprime campo Ex
+      for (j=0;j<n;j++){
+	printf("%f ",Ex[n*i+j]);
+      }
+      printf("\n");
+    }
+    for (i=0;i<n;i++){ // Imprime campo Ey
+      for (j=0;j<n;j++){
+	printf("%f ",Ey[n*i+j]);
+      }
+      printf("\n");
+    }
   }
   return 0;
 }
