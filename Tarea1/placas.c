@@ -39,7 +39,7 @@ int main(int argc, char** argv){
   i_inicial = (n*n*world_rank/world_size) - n; // Se resta para incluir la fila anterior
   i_final = (n*(world_rank + 1)*n/world_size) + n; // Se suma para ir hasta la siguiente fila
   
-  printf("proc %d empieza en %d",world_rank,i_inicial);
+  printf("proc %d empieza en %d",world_rank,i_inicial); // Fail
   if (world_rank==0){
     i_inicial = 0;
   }
