@@ -42,6 +42,8 @@ int main(int argc, char** argv){
   }
   int num_filas = (i_final - i_inicial)/n; // Numero de filas en este sector
 
+  printf("Al procesador %d de %d tiene de %d a %d, %d lineas\n",world_rank,world_size,i_inicial,i_final,num_filas);
+
   int i,j,iter;
   
   double *V; // Matriz de potencial electrico presente
