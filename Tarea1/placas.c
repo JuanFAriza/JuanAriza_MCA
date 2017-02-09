@@ -34,10 +34,10 @@ int main(int argc, char** argv){
 
   i_inicial = -n + n*world_rank*n/world_size; // Se resta para incluir la fila anterior
   i_final = n + n*(world_rank + 1)*n/world_size; // Se suma para ir hasta la siguiente fila
-  if (i_inicial < 0){
+  if (world_rank==0){
     i_inicial = 0;
   }
-  if (i_final > n*n){
+  if (world_rank==world_size-1){
     i_final = n*n;
   }
   int num_filas = (i_final - i_inicial)/n; // Numero de filas en este sector
@@ -211,14 +211,14 @@ void valores_fijos(double *grid, int inicial, int final){
   if (inicial < inicio_placa1){
     if (final > fin_placa1){
       for (i=inicio_placa1-inicial;i<fin_placa1-inicial;i++){
-	grid[i] = -V0/2; // Fijar placa 1
+	grid[i] = -V0/2.0; // Fijar placa 1
       }
     }
   }
   if (inicial < inicio_placa2){
     if (final > fin_placa2){
       for (i=inicio_placa2-inicial;i<fin_placa2-inicial;i++){
-	grid[i] = V0/2; // Fijar placa 2
+	grid[i] = V0/2.0; // Fijar placa 2
       }
     }
   }
