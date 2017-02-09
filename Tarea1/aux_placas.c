@@ -43,8 +43,6 @@ int main(int argc, char** argv){
   }
   num_filas = (i_final - i_inicial)/n; // Numero de filas en este sector
 
-  printf("procesador %d tiene %d filas\n",world_rank,num_filas);
-
   double *V; // Matriz de potencial electrico presente
   double *Vfuturo; // Matriz de potencial electrico futuro
   double *Vsend; // Matriz que se envia al procesador central
@@ -124,33 +122,27 @@ int main(int argc, char** argv){
     // Actualiza con lo recibido
   }
 
-  printf("Iteraciones correctas\n");
-
   // Define el array que va a enviar a centralizar
   if (world_rank==0){
     for (i=0;i<i_final-n;i++){
       Vsend[i] = V[i];
     }
-    printf("Proc %d creo send\n",world_rank);
   }
   else if (world_rank==(world_size-1)){
     for (i=0;i<(n*n/world_size);i++){
       Vsend[i] = V[(i+n)];
     }
-    printf("Proc %d creo send\n",world_rank);
   }
   else {
     for (i=0;i<(n*n/world_size);i++){
       Vsend[i] = V[(i+n)];
     }
-    printf("Proc %d creo send\n",world_rank);
   }
 
   if (world_rank==0){ // Asigna para el proc0 la memoria de las matrices finales
     Vfinal = malloc(n*n*sizeof(double));
     Ex = malloc(n*n*sizeof(double));
     Ey = malloc(n*n*sizeof(double));
-    printf("Proc %d creo finales\n",world_rank);
   }
 
   MPI_Gather(Vsend, (n*n/world_size), MPI_DOUBLE, Vfinal, (n*n/world_size), MPI_DOUBLE, 0, MPI_COMM_WORLD);  // Centraliza los Vsend en Vfinal
