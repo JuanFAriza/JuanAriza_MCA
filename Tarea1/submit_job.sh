@@ -1,5 +1,5 @@
 #PBS -N placas_exec_scheduler
-#PBS -l nodes=2:ppn=4
+#PBS -l nodes=1:ppn=4
 #PBS -M jf.ariza10@uniandes.edu.co
 #PBS -m abe
 
