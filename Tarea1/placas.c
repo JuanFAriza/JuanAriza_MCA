@@ -42,8 +42,6 @@ int main(int argc, char** argv){
   }
   int num_filas = (i_final - i_inicial)/n; // Numero de filas en este sector
 
-  printf("Al procesador %d de %d tiene de %d a %d, %d lineas\n",world_rank,world_size,i_inicial,i_final,num_filas);
-
   int i,j,iter;
   
   double *V; // Matriz de potencial electrico presente
@@ -65,6 +63,8 @@ int main(int argc, char** argv){
   valores_fijos(V,i_inicial,i_final);
   inicializar(Vfuturo,i_inicial,i_final);
   valores_fijos(Vfuturo,i_inicial,i_final);
+
+  printf("Se inicializaron las matrices");
 
   for (iter=0;iter<N;iter++){
     for (i=1;i<num_filas-1;i++){ // Actualiza el futuro de acuerdo al presente
