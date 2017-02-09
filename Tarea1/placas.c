@@ -53,7 +53,7 @@ int main(int argc, char** argv){
   
   V = malloc((i_final - i_inicial)*sizeof(double));
   Vfuturo = malloc((i_final - i_inicial)*sizeof(double));
-  Vsend = malloc(sizeof(double)*n*n/world_size)
+  Vsend = malloc(sizeof(double)*n*n/world_size);
   send_sig = malloc(n*sizeof(double));
   send_ante = malloc(n*sizeof(double));
   recv_sig = malloc(n*sizeof(double));
