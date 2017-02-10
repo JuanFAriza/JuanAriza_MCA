@@ -25,21 +25,16 @@ int main(int argc, char** argv){
 
   MPI_Init(NULL, NULL);
 
-  MPI_Request send_sig_request, send_ante_request, recv_sig_request, recv_ante_request;
-  MPI_Status status;
+  MPI_Request reqs[4];
+  MPI_Status status[4];
 
   int world_rank, world_size, source, destination;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-  printf("procesador %d de %d arranco n es %d\n",world_rank,world_size,n); // Checkpoint A
-
-  printf("proces %d ini %d\n",world_rank,n*n*world_rank/world_size); // Checkpoint B
-
   i_inicial = (n*n*world_rank/world_size) - n; // Se resta para incluir la fila anterior
   i_final = (n*(world_rank + 1)*n/world_size) + n; // Se suma para ir hasta la siguiente fila
-  
-  printf("proc %d empieza en %d",world_rank,i_inicial); // Fail
+
   if (world_rank==0){
     i_inicial = 0;
   }
@@ -47,8 +42,6 @@ int main(int argc, char** argv){
     i_final = n*n;
   }
   num_filas = (i_final - i_inicial)/n; // Numero de filas en este sector
-
-  printf("procesador %d tiene %d filas",world_rank,num_filas);
 
   double *V; // Matriz de potencial electrico presente
   double *Vfuturo; // Matriz de potencial electrico futuro
@@ -83,20 +76,30 @@ int main(int argc, char** argv){
     if (world_rank>0){ // Si no es el primero, envia y recibe del anterior
       destination = world_rank - 1;
       source = world_rank - 1;
-      MPI_Isend(&send_ante, n, MPI_DOUBLE, destination, 0, MPI_COMM_WORLD, &send_ante_request);
-      MPI_Irecv(&recv_ante, n, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, &recv_ante_request);
+      MPI_Isend(send_ante, n, MPI_DOUBLE, destination, 0, MPI_COMM_WORLD, &reqs[0]);
+      MPI_Irecv(recv_ante, n, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, &reqs[1]);
     }
     if (world_rank<world_size-1){ // Si no es el ultimo, envia y recibe del siguiente
       destination = world_rank + 1;
       source = world_rank + 1;
-      MPI_Isend(&send_sig, n, MPI_DOUBLE, destination, 0, MPI_COMM_WORLD, &send_sig_request);
-      MPI_Irecv(&recv_sig, n, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, &recv_sig_request);
+      MPI_Isend(send_sig, n, MPI_DOUBLE, destination, 0, MPI_COMM_WORLD, &reqs[2]);
+      MPI_Irecv(recv_sig, n, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, &reqs[3]);
     }
 
-    MPI_Wait(&send_ante_request, &status);
-    MPI_Wait(&recv_ante_request, &status);
-    MPI_Wait(&send_sig_request, &status);
-    MPI_Wait(&recv_sig_request, &status);
+    if (world_rank==0){
+      MPI_Wait(&reqs[2], &status[2]);
+      MPI_Wait(&reqs[3], &status[3]);
+    }
+    else if (world_rank==world_size-1){
+      MPI_Wait(&reqs[0], &status[0]);
+      MPI_Wait(&reqs[1], &status[1]);
+    }
+    else {
+      MPI_Wait(&reqs[0], &status[0]);
+      MPI_Wait(&reqs[1], &status[1]);
+      MPI_Wait(&reqs[2], &status[2]);
+      MPI_Wait(&reqs[3], &status[3]);
+    }
 
     if (world_rank>0){ // Actualiza en futuro frontera inferior
       for (i=0;i<n;i++){
@@ -116,25 +119,22 @@ int main(int argc, char** argv){
     valores_fijos(V,i_inicial,i_final); // Fijo los valores fijos
   }
 
-  printf("Iteraciones correctas\n");
-
   // Define el array que va a enviar a centralizar
   if (i_inicial==0){
-    for (i=0;i<i_final-n;i++){
+    for (i=0;i<(n*n/world_size);i++){
       Vsend[i] = V[i];
     }
   }
-  if (i_inicial!=0){
-    if (i_final==n*n){
-      for (i=n;i<i_final;i++){
-	Vsend[i-n] = V[i];
-      }
+  else  if (i_final==n*n){
+    for (i=0;i<(n*n/world_size);i++){
+      Vsend[i] = V[(i+n)];
     }
-    if (i_final!=n*n){
-      for(i=n;i<i_final-n;i++){
-	Vsend[i-n] = V[i];
+  }
+  else {
+    for (i=0;i<(n*n/world_size);i++)
+      {
+	Vsend[i] = V[(i+n)];
       }
-    }
   }
 
   if (world_rank==0){ // Asigna para el proc0 la memoria de las matrices finales
@@ -143,7 +143,7 @@ int main(int argc, char** argv){
     Ey = malloc(n*n*sizeof(double));
   }
 
-  MPI_Gather(&Vsend, (n*n/world_size), MPI_DOUBLE, Vfinal, (n*n/world_size), MPI_DOUBLE, 0, MPI_COMM_WORLD);  // Centraliza los Vsend en Vfinal
+  MPI_Gather(Vsend, (n*n/world_size), MPI_DOUBLE, Vfinal, (n*n/world_size), MPI_DOUBLE, 0, MPI_COMM_WORLD);  // Centraliza los Vsend en Vfinal
 
   if (world_rank==0){ // Si es el proc. 0 imprime los valores
     for (i=0;i<n;i++){ // Calcula el campo Ex en las columnas en el borde
