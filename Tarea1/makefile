@@ -8,8 +8,9 @@ datos.dat: mpi_placas # mpi_placas genera los datos
 mpi_placas: placas.c # compilo el programa
 	${MPICC} -lm placas.c -o mpi_placas
 
-cluster:
+cluster: # para correrlo desde el cluster, no crea .dat y no corre el .py
 	${MPICC} -lm placas.c -o mpi_placas
 	qsub submit_job.sh
 clean:
+	rm -f datos.dat
 	rm -f mpi_placas
