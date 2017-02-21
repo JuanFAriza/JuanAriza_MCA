@@ -1,36 +1,36 @@
-// Voy a partir la grilla horizontalmente, cada procesador maneja todas las columnas, pero solo un rango de filas que va hasta la frontera mas una fila
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-#define L (double)5 // Longitud lateral del cuadro
-#define l (double)2 // Longitud de la placa
-#define d (double)1 // Separacion entre placas
-#define V0 (double)100 // Diferencia de potencial entre placas
-#define h (double)0.01953 // Longitud de cada celda de la rejilla, tal que celdas=256
-#define N (int)(2*pow((L/h),2)) // Numero de iteraciones
-#define n (int)(L/h) // Numero de celdas por eje (256)
+#define L (double)5
+#define l (double)2
+#define d (double)1
+#define V0 (double)100
+#define h (double)0.01953
+#define N (int)(2*pow((L/h),2))
+#define n (int)(L/h)
 #define inicio_placa1 ((int)(((L/2) - (d/2))/h))*n + ((int)(((L/2) - (l/2))/h))
 #define fin_placa1 ((int)(((L/2) - (d/2))/h))*n + ((int)(((L/2) + (l/2))/h))
 #define inicio_placa2 ((int)(((L/2) + (d/2))/h))*n + ((int)(((L/2) - (l/2))/h))
 #define fin_placa2 ((int)(((L/2) + (d/2))/h))*n + ((int)(((L/2) + (l/2))/h))
 
-
 void inicializar(double *grid, int inicial, int final); // Inicializa todo en 0
 void valores_fijos(double *grid, int inicial, int final);
 
 int main(int argc, char** argv){
-  int iter,i,j,i_inicial,i_final,num_filas;
+  int iter, i, j, i_inicial, i_final, num_filas;
 
-  MPI_Init(NULL, NULL);
+  MPI_Init(NULL,NULL);
+
+  int world_rank, world_size;
+  int source, destination;
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
   MPI_Request reqs[4];
   MPI_Status status[4];
-
-  int world_rank, world_size, source, destination;
-  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
   i_inicial = (n*n*world_rank/world_size) - n; // Se resta para incluir la fila anterior
   i_final = (n*(world_rank + 1)*n/world_size) + n; // Se suma para ir hasta la siguiente fila
@@ -57,13 +57,13 @@ int main(int argc, char** argv){
   send_ante = malloc(n*sizeof(double));
   recv_sig = malloc(n*sizeof(double));
   recv_ante = malloc(n*sizeof(double));
-
+  
   inicializar(V,i_inicial,i_final);
   valores_fijos(V,i_inicial,i_final);
   inicializar(Vfuturo,i_inicial,i_final);
   valores_fijos(Vfuturo,i_inicial,i_final);
 
-  for (iter=0;iter<N;iter++){
+  for (iter=0;iter<10000;iter++){ // Devolver a N no 10000
     for (i=1;i<num_filas-1;i++){ // Actualiza el futuro de acuerdo al presente
       for (j=1;j<n-1;j++){
 	Vfuturo[n*i+j] = (0.25)*(V[n*i+j+1]+V[n*(i+1)+j]+V[n*i+j-1]+V[n*(i-1)+j]);
@@ -73,6 +73,7 @@ int main(int argc, char** argv){
       send_ante[i] = Vfuturo[n+i]; // Segunda fila
       send_sig[i] = Vfuturo[(num_filas-2)*n+i]; // Penultima fila
     }
+
     if (world_rank>0){ // Si no es el primero, envia y recibe del anterior
       destination = world_rank - 1;
       source = world_rank - 1;
@@ -94,7 +95,7 @@ int main(int argc, char** argv){
       MPI_Wait(&reqs[0], &status[0]);
       MPI_Wait(&reqs[1], &status[1]);
     }
-    else {
+    else{
       MPI_Wait(&reqs[0], &status[0]);
       MPI_Wait(&reqs[1], &status[1]);
       MPI_Wait(&reqs[2], &status[2]);
@@ -114,27 +115,28 @@ int main(int argc, char** argv){
 
     for (i=0;i<(i_final-i_inicial);i++){ // Actualiza presente de acuerdo a futuro
       V[i] = Vfuturo[i];
-    }
+      }
 
     valores_fijos(V,i_inicial,i_final); // Fijo los valores fijos
+
+    // Actualiza con lo recibido
   }
 
   // Define el array que va a enviar a centralizar
-  if (i_inicial==0){
-    for (i=0;i<(n*n/world_size);i++){
+  if (world_rank==0){
+    for (i=0;i<i_final-n;i++){
       Vsend[i] = V[i];
     }
   }
-  else  if (i_final==n*n){
+  else if (world_rank==(world_size-1)){
     for (i=0;i<(n*n/world_size);i++){
       Vsend[i] = V[(i+n)];
     }
   }
   else {
-    for (i=0;i<(n*n/world_size);i++)
-      {
-	Vsend[i] = V[(i+n)];
-      }
+    for (i=0;i<(n*n/world_size);i++){
+      Vsend[i] = V[(i+n)];
+    }
   }
 
   if (world_rank==0){ // Asigna para el proc0 la memoria de las matrices finales
@@ -185,6 +187,7 @@ int main(int argc, char** argv){
       printf("\n");
     }
   }
+
   MPI_Finalize();
   return 0;
 }
