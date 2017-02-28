@@ -61,7 +61,7 @@ def MacCormack(delta_x, delta_t, T):
         p_star = P(e_star,rho_star,u_star)
         F_star = np.array([u_star*rho_star,e_star*u_star*u_star + p_star,u_star*(e_star + p_star)])
 
-        Ufin = 0.5(U + U_star - (delta_t/delta_x)*(F_star - np.roll(F_star,1,axis=1)))
+        Ufin = 0.5*(U + U_star - (delta_t/delta_x)*(F_star - np.roll(F_star,1,axis=1)))
         U = Ufin.copy()
         t = t + delta_t
     return x, U0, U
@@ -71,4 +71,4 @@ deltat = 0.01
 
 T=[1.0,2.0,3.0]
 
-MacCormack(deltax,deltat,
+MacCormack(deltax,deltat,T[0])
