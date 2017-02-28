@@ -5,20 +5,19 @@ gamma = 1.4
 
 def rho_0(x):
     x = np.array(x)
-    for i in len(x):
-        if (x[i] <= 0.5):
-            x[i] = 1.0
-        else:
-            x[i] = 0.125
+    ii = x<=0.5
+    jj = x>0.5
+    x[ii] = 1.0
+    x[jj] = 0.125, 
     return x
+
 
 def P_0(x):
     x = np.array(x)
-    for i in len(x):
-        if (x[i] <= 0.5):
-            x[i] = 1.0
-        else:
-            x[i] = 0.1
+    ii = x<=0.5
+    jj = x>0.5
+    x[ii] = 1.0
+    x[jj] = 0.1
     return x
 
 def u_0(x):
