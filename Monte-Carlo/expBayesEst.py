@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-obs = np.array([3.0,5.0,12.0])
+obs = np.array([1.5,1.7,2.0])
 a = 1.0
 b = 20.0
 
@@ -27,9 +27,16 @@ def posterior(x, l): # Asumimos l float, no array
         post[i] = verosimilitud(x,l[i])*prior(l[i])/evidencia(x)
     return post
 
+def post(x, l): # Asumimos l array
+    l = np.array(l)
+    post = np.zeros(len(l),dtype='float')
+    for i in range(len(l)):
+        post[i] = verosimilitud(x,l[i])*prior(l[i])/evidencia(x)
+    return post
+
 N = 10**5
-delta = 0.1
-lambda0 = 7.0
+delta = 0.05
+lambda0 = 1.0
 lambdas = np.array([lambda0])
 
 def q(x1,x2): # Probabilidad de pasar a x1 dado que estoy en x2
@@ -47,5 +54,8 @@ for i in range(N-2):
     else:
         lambdas = np.append(lambdas,lambdas[i])
 
+l = np.linspace(0.1,16,1000)
+prob = post(obs,l)*N*500
+plt.plot(l,prob)
 plt.hist(lambdas,bins=50)
 plt.show()
