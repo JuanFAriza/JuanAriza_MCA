@@ -20,16 +20,16 @@ def prior(l):
 def evidencia(x):
     return 1
 
-def posterior(x, l):
-    l = np.array(l)
+def posterior(x, l): # Asumimos l float, no array
+    l = np.array([l])
     post = np.zeros(len(l),dtype='float')
     for i in range(len(l)):
         post[i] = verosimilitud(x,l[i])*prior(l[i])/evidencia(x)
     return post
 
-N = 10**6
+N = 10**5
 delta = 0.1
-lambda0 = 1.0
+lambda0 = 7.0
 lambdas = np.array([lambda0])
 
 def q(x1,x2): # Probabilidad de pasar a x1 dado que estoy en x2
@@ -47,5 +47,5 @@ for i in range(N-2):
     else:
         lambdas = np.append(lambdas,lambdas[i])
 
-plt.hist(lambdas)
+plt.hist(lambdas,bins=50)
 plt.show()
