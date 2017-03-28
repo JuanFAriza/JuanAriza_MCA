@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt ##
 
 N = 20
 
@@ -22,7 +23,7 @@ for i in range(1,N):
         y_est = y_est + beta[j]*(x**(i-j))
     err = (y - y_est)**2
     ECP_tr = err.mean()
-    y_est = np.zeros(len(x_test))
+    y_est = np.zeros(len(x_test))    
     for j in range(i):
         y_est = y_est + beta[j]*(x_test**(i-j))
     err = (y_test - y_est)**2
@@ -32,3 +33,4 @@ for i in range(1,N):
     Errores = np.append(Errores, Error)
 
 print Errores
+print "Polinomio de mejor ajuste es de grado : " + format(np.argmin(Errores) + 1)
