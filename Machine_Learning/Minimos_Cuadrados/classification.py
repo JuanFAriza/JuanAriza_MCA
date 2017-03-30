@@ -46,11 +46,3 @@ ft = t*eig_vec0[1]/eig_vec0[0]
 
 plt.plot(t+x0.mean(),ft+y0.mean())
 plt.show()
-"""
-eigen_vect0 = vect0.T
-
-cambio_base_t = np.linalg.inv(vectors).T
-data_cambio = np.matmul(data_B,cambio_base_t)
-
-eigen_vect = np.matmul(eigen_vect_can,cambio_base_t)
-"""
