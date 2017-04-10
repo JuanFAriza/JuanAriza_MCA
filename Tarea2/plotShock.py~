@@ -1,0 +1,10 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+L=1
+gamma = 1.4
+
+rho_izq = 1
+rho_der = 0.125
+P_izq = 1
+P_der = 0.1
