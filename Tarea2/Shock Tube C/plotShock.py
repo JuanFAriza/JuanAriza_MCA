@@ -1,5 +1,20 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+data = np.loadtxt('shock.dat')
+
+U1, U2, U3 = data[1:-1,0], data[1:-1,1], data[1:-1,2]
+
+def P(e, rho, u):
+    return 0.4*(e - 0.5*rho*u**2)
+
+x = np.linspace(0, 1, len(U1))
+
+rho_f = U1
+P_f = P(U3, U1, U2/U1)
+u_f = U2/U1
 
 L = 1.0
 xdiscont = 0.5
@@ -38,13 +53,11 @@ def SolucionExacta():
     p_c_antes = 0.3
     n = 0
     p_c = p_c_antes - fP(p_c_antes)/fP_prima(p_c_antes)
-    #    var = abs(p_c - p_c_antes)/(0.5*(abs(p_c) + abs(p_c_antes)))
     var = abs(fP(p_c))
     
     while (var > 1*(10.0**(-10))):
         p_c_antes = p_c
         p_c = p_c_antes - fP(p_c_antes)/fP_prima(p_c_antes)
-        #        var = abs(p_c - p_c_antes)/(0.5*(abs(p_c) + abs(p_c_antes)))
         var = abs(fP(p_c))
         n += 1
         
@@ -56,9 +69,9 @@ def SolucionExacta():
     S_t_l = u_c - a_c_l
     S_r = u_r + a_r*np.sqrt(0.5*(gamma + 1)*p_c/(gamma*P_r) + 0.5*(gamma - 1)/gamma)
 
-    x = np.linspace(0,1,500)
+    x = np.linspace(0,1,100)
     t = 0.21
-    delta_t = 0.00001
+    delta_t = 0.0001
     ud = 0.5
     RHO = x.copy()
     U = x.copy()
@@ -78,23 +91,7 @@ def SolucionExacta():
                 ud = x[i]
                 der_u_max = der_u
         der_u_max = 0    
-    print t
-
-    plt.subplot(311)
-    plt.plot(x,RHO)
-    plt.ylabel('Density')
-    plt.axis([0,1,0,2])
-
-    plt.subplot(312)
-    plt.plot(x,U)
-    plt.ylabel('Speed')
-    plt.axis([0,1,0,2])
-    
-    plt.subplot(313)
-    plt.plot(x,PR)
-    plt.ylabel('Pressure')
-    plt.axis([0,1,0,2])
-    plt.show()
+    return RHO, U, PR
 
 def Reg(x,t,rho_c_l,rho_c_r,u_c,p_c,S_h_l,S_t_l,S_r): # Devuelve rho, u, P
     if (x - xdiscont < S_h_l*t): # L
@@ -112,4 +109,23 @@ def Reg(x,t,rho_c_l,rho_c_r,u_c,p_c,S_h_l,S_t_l,S_r): # Devuelve rho, u, P
         return rho_r, u_r, P_r
     
     
-SolucionExacta()
+rho_r, u_r, P_r = SolucionExacta()
+y = np.linspace(0,1,100)
+
+plt.plot(x, rho_f, label = 'Numerica')
+plt.plot(y, rho_r, label = 'Analitica')
+plt.legend()
+plt.savefig('rho.png')
+plt.close()
+
+plt.plot(x, P_f, label = 'Numerica')
+plt.plot(y, P_r, label = 'Analitica')
+plt.legend()
+plt.savefig('P.png')
+plt.close()
+
+plt.plot(x, u_f, label = 'Numerica')
+plt.plot(y, u_r, label = 'Analitica')
+plt.legend()
+plt.savefig('u.png')
+plt.close()

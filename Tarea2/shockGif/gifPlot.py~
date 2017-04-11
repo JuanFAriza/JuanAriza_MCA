@@ -1,0 +1,24 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import sys
+import os
+import plotShock as shock
+
+T = 0.2278
+x, RHO, U, PR = shock.SolucionExacta(T)
+
+plt.subplot(311)
+plt.plot(x,RHO)
+plt.ylabel('Density')
+plt.axis([0,1,0,2])
+
+plt.subplot(312)
+plt.plot(x,U)
+plt.ylabel('Speed')
+plt.axis([0,1,0,2])
+
+plt.subplot(313)
+plt.plot(x,PR)
+plt.ylabel('Pressure')
+plt.axis([0,1,0,2])
+plt.show()

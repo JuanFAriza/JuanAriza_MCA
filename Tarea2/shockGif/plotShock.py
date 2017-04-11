@@ -34,7 +34,7 @@ def fP_prima(p):
     val = (a_l/(gamma*P_l))*(P_l/p)**((gamma + 1)/(2*gamma)) + np.sqrt(A_r/(p + B_r))*(1 - (p - P_r)/(2*(p + B_r)))
     return val
 
-def SolucionExacta():
+def SolucionExacta(T):
     p_c_antes = 0.3
     n = 0
     p_c = p_c_antes - fP(p_c_antes)/fP_prima(p_c_antes)
@@ -56,45 +56,49 @@ def SolucionExacta():
     S_t_l = u_c - a_c_l
     S_r = u_r + a_r*np.sqrt(0.5*(gamma + 1)*p_c/(gamma*P_r) + 0.5*(gamma - 1)/gamma)
 
-    x = np.linspace(0,1,500)
-    t = 0.21
+    x = np.linspace(0,1,501)
+    t = 0
     delta_t = 0.00001
     ud = 0.5
     RHO = x.copy()
     U = x.copy()
     PR = x.copy()
 
-    der_u_max = 0
-    while (ud < 0.9):
-        t += delta_t
-        
+    timestep = T/99
+    it = 0
+    rho_f = np.zeros([100,len(x)],dtype='double')
+    u_f = np.zeros([100,len(x)],dtype='double')
+    pr_f = np.zeros([100,len(x)],dtype='double')
+
+    ii = x <= 0.5
+    jj = x > 0.5
+    RHO[ii] = 1.0
+    RHO[jj] = 0.125
+    U[ii] = U [jj] = 0
+    PR[ii] = 1.0
+    PR[jj] = 0.1
+
+    rho_f[it] = RHO
+    u_f[it] = U
+    pr_f[it] = PR
+
+    it += 1
+    t = delta_t
+
+    while (t < T):
+        if (t>timestep*it):
+            it += 1
         for i in range(len(x)):
             r,u,p = Reg(x[i],t,rho_c_l,rho_c_r,u_c,p_c,S_h_l,S_t_l,S_r)
             RHO[i] = r
             U[i] = u
             PR[i] = p
-            der_u = abs(U[i] - U[i-1])
-            if (der_u_max < der_u):
-                ud = x[i]
-                der_u_max = der_u
-        der_u_max = 0    
-    print t
+        rho_f[it] = RHO
+        u_f[it] = U
+        pr_f[it] = PR
+        t += delta_t
+    return x, rho_f, u_f, pr_f
 
-    plt.subplot(311)
-    plt.plot(x,RHO)
-    plt.ylabel('Density')
-    plt.axis([0,1,0,2])
-
-    plt.subplot(312)
-    plt.plot(x,U)
-    plt.ylabel('Speed')
-    plt.axis([0,1,0,2])
-    
-    plt.subplot(313)
-    plt.plot(x,PR)
-    plt.ylabel('Pressure')
-    plt.axis([0,1,0,2])
-    plt.show()
 
 def Reg(x,t,rho_c_l,rho_c_r,u_c,p_c,S_h_l,S_t_l,S_r): # Devuelve rho, u, P
     if (x - xdiscont < S_h_l*t): # L
@@ -110,6 +114,3 @@ def Reg(x,t,rho_c_l,rho_c_r,u_c,p_c,S_h_l,S_t_l,S_r): # Devuelve rho, u, P
         return rho_c_r, u_c, p_c
     else: # R
         return rho_r, u_r, P_r
-    
-    
-SolucionExacta()
