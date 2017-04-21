@@ -67,4 +67,5 @@ for i in range(350):
     valid_labels[i] = dat[0]
 
 predict = rf.predict(valid_data)
-ERR = np.sum(predict == valid_labels.T[0])
+ERR =1 - np.sum(predict == valid_labels.T[0])/350.0
+print "El acierto fue",1-ERR
